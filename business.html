@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Al Kharj Business Directory</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',system-ui;background:#0a0a0f;color:#fff}
+        .header{background:#000;padding:15px20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;border-bottom:2px solid #c9a84c}
+        .logo{font-size:24px;font-weight:bold;color:#c9a84c}
+        .logo span{color:#e8572a}
+        .btn{background:linear-gradient(135deg,#c9a84c,#e8572a);color:#000;padding:10px20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+        .hero{text-align:center;padding:60px20px;background:linear-gradient(135deg,#0a0a0f,#1a1a2e)}
+        .hero h1{font-size:42px;margin-bottom:20px}
+        .hero h1 span{color:#c9a84c}
+        .hero p{color:#aaa;margin-bottom:30px}
+        .stats{display:flex;justify-content:center;gap:40px;margin-top:50px;flex-wrap:wrap}
+        .stat{text-align:center}
+        .stat-number{font-size:28px;font-weight:bold;color:#c9a84c}
+        .search-section{background:#12121a;padding:40px20px;text-align:center}
+        .search-box{max-width:500px;margin:20px auto;display:flex}
+        .search-box input{flex:1;padding:12px;border:none;border-radius:8px0 0 8px;background:#1c1c2e;color:#fff}
+        .search-box button{padding:12px25px;background:#c9a84c;border:none;border-radius:0 8px 8px 0;cursor:pointer;font-weight:bold}
+        .section{padding:50px20px;max-width:1200px;margin:0 auto}
+        .section-title{text-align:center;font-size:32px;margin-bottom:40px}
+        .section-title span{color:#c9a84c}
+        .categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:15px}
+        .category-card{background:#1c1c2e;padding:20px;text-align:center;border-radius:12px;cursor:pointer;border:1px solid rgba(201,168,76,0.2);transition:all .3s}
+        .category-card:hover,.category-card.active{border-color:#c9a84c;background:rgba(201,168,76,0.1);transform:translateY(-3px)}
+        .category-icon{font-size:35px;display:block;margin-bottom:8px}
+        .businesses-bg{background:#12121a;padding:50px20px}
+        .business-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+        .business-card{background:#1c1c2e;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid rgba(201,168,76,0.1);transition:all .3s}
+        .business-card:hover{transform:translateY(-5px);border-color:#c9a84c}
+        .business-icon{height:120px;display:flex;align-items:center;justify-content:center;font-size:50px;background:linear-gradient(135deg,#2a2a3e,#1a1a2e)}
+        .business-info{padding:20px}
+        .business-category{color:#c9a84c;font-size:11px;font-weight:bold;text-transform:uppercase}
+        .business-name{font-size:18px;font-weight:bold;margin:8px0}
+        .business-desc{color:#aaa;font-size:13px;margin-bottom:12px}
+        .business-footer{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1)}
+        .rating{color:#c9a84c;font-size:13px}
+        .status{background:rgba(46,204,113,0.2);color:#2ecc71;padding:3px8px;border-radius:15px;font-size:11px}
+        .whatsapp-float{position:fixed;bottom:30px;left:30px;background:#25D366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;text-decoration:none;z-index:99}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);justify-content:center;align-items:center;z-index:1000}
+        .modal-content{background:#1c1c2e;padding:30px;border-radius:15px;width:90%;max-width:450px;border:1px solid #c9a84c}
+        .modal-content h2{color:#c9a84c;margin-bottom:20px}
+        .modal-content input,.modal-content select,.modal-content textarea{width:100%;padding:12px;margin:10px0;background:#0a0a0f;border:1px solid #333;border-radius:8px;color:#fff}
+        .close{float:right;font-size:28px;cursor:pointer;color:#aaa}
+        .toast{position:fixed;bottom:30px;right:30px;background:#c9a84c;color:#000;padding:12px20px;border-radius:8px;display:none;z-index:1000;font-weight:bold}
+        .footer{background:#0a0a0f;padding:30px20px;text-align:center;border-top:1px solid rgba(201,168,76,0.2)}
+        .no-results{text-align:center;padding:40px;color:#aaa;display:none}
+        @media(max-width:768px){.hero h1{font-size:28px}.business-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">Al Kharj <span>Business</span></div>
+    <a onclick="openAddModal()" class="btn" style="background:transparent; border:1px solid #c9a84c;">➕ Add Business</a>
+</div>
+
+<div class="hero">
+    <h1>Discover Best <span>Businesses</span><br>in Al Kharj</h1>
+    <p>Your trusted platform to find local businesses and services</p>
+    <div class="stats">
+        <div class="stat"><div class="stat-number" id="businessCount">0</div><div>Businesses</div></div>
+        <div class="stat"><div class="stat-number" id="categoryCount">0</div><div>Categories</div></div>
+        <div class="stat"><div class="stat-number">4.8★</div><div>Rating</div></div>
+    </div>
+</div>
+
+<div class="search-section">
+    <h2>🔍 Search Any Business</h2>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search..." onkeypress="if(event.key==='Enter') searchBusinesses()">
+        <button onclick="searchBusinesses()">Search</button>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Browse by <span>Category</span></h2>
+    <div class="categories-grid" id="categoriesGrid"></div>
+</div>
+
+<div class="businesses-bg">
+    <h2 class="section-title">All <span>Businesses</span></h2>
+    <div class="business-grid" id="businessGrid"></div>
+</div>
+
+<div class="footer">
+    <p>© 2026 Al Kharj Business Directory | Al Kharj, Saudi Arabia</p>
+</div>
+
+<a href="https://wa.me/966500000000" class="whatsapp-float" target="_blank">💬</a>
+
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddModal()">&times;</span>
+        <h2>Register Business</h2>
+        <input type="text" id="bizName" placeholder="Business Name *">
+        <select id="bizCategory">
+            <option value="">Select Category</option>
+            <option value="Restaurant">🍽️ Restaurant</option>
+            <option value="Health">🏥 Health</option>
+            <option value="Service">🔧 Service</option>
+            <option value="Construction">🏗️ Construction</option>
+            <option value="Retail">🛒 Retail</option>
+            <option value="Education">📚 Education</option>
+            <option value="Beauty">💇 Beauty</option>
+        </select>
+        <textarea id="bizDesc" rows="3" placeholder="Description"></textarea>
+        <input type="text" id="bizPhone" placeholder="Phone *">
+        <input type="email" id="bizEmail" placeholder="Email *">
+        <input type="text" id="bizAddress" placeholder="Address">
+        <button class="btn" onclick="addBusiness()" style="width:100%">Submit</button>
+    </div>
+</div>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDetailModal()">&times;</span>
+        <div id="businessDetail"></div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyB4ApTR6WXIXJtR45zaie5Ss8fjKTVvsKY",
+        authDomain: "alkharj-business.firebaseapp.com",
+        projectId: "alkharj-business",
+        storageBucket: "alkharj-business.firebasestorage.app",
+        messagingSenderId: "162914266635",
+        appId: "1:162914266635:web:016542f204a0b9b272210e"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let businesses = [];
+    let activeCategory = null;
+    let searchTerm = "";
+    
+    const catIcons = {Restaurant:"🍽️",Health:"🏥",Service:"🔧",Construction:"🏗️",Retail:"🛒",Education:"📚",Beauty:"💇"};
+    const catNames = {Restaurant:"Restaurants",Health:"Health",Service:"Services",Construction:"Construction",Retail:"Retail",Education:"Education",Beauty:"Beauty"};
+    
+    async function loadBusinesses() {
+        const snapshot = await db.collection("businesses").get();
+        businesses = [];
+        snapshot.forEach(doc => businesses.push({id:doc.id, ...doc.data()}));
+        if(businesses.length === 0) await addDemoBusinesses();
+        renderAll();
+    }
+    
+    async function addDemoBusinesses() {
+        const demo = [
+            {name:"Al Kharj Restaurant",category:"Restaurant",desc:"Best Saudi cuisine",phone:"0501111111",email:"restaurant@alkharj.com",address:"Al Kharj",rating:4.9,reviews:230,status:"Open",icon:"🍖"},
+            {name:"Elite Clinic",category:"Health",desc:"Medical services",phone:"0502222222",email:"clinic@alkharj.com",address:"Al Kharj",rating:4.8,reviews:185,status:"Open",icon:"💊"},
+            {name:"Tech Repair",category:"Service",desc:"Repair services",phone:"0503333333",email:"tech@alkharj.com",address:"Al Kharj",rating:4.7,reviews:142,status:"Open",icon:"🔧"},
+            {name:"Real Estate",category:"Construction",desc:"Property dealers",phone:"0504444444",email:"realestate@alkharj.com",address:"Al Kharj",rating:4.9,reviews:310,status:"Open",icon:"🏠"}
+        ];
+        for(let b of demo) await db.collection("businesses").add(b);
+        loadBusinesses();
+    }
+    
+    function renderAll() {
+        renderCategories();
+        renderBusinesses();
+        document.getElementById('businessCount').innerText = businesses.length;
+    }
+    
+    function renderCategories() {
+        let cats = {};
+        businesses.forEach(b => cats[b.category] = (cats[b.category] || 0) + 1);
+        let html = "";
+        for(let c in cats) {
+            html += `<div class="category-card ${activeCategory===c?'active':''}" onclick="filterByCategory('${c}')">
+                        <span class="category-icon">${catIcons[c]||"📌"}</span>
+                        <strong>${catNames[c]||c}</strong><br>
+                        <small>${cats[c]} businesses</small>
+                    </div>`;
+        }
+        document.getElementById('categoriesGrid').innerHTML = html;
+        document.getElementById('categoryCount').innerText = Object.keys(cats).length;
+    }
+    
+    function renderBusinesses() {
+        let filtered = [...businesses];
+        if(activeCategory) filtered = filtered.filter(b => b.category === activeCategory);
+        if(searchTerm) filtered = filtered.filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        let html = "";
+        filtered.forEach(b => {
+            html += `<div class="business-card" onclick="viewBusiness('${b.id}')">
+                        <div class="business-icon">${b.icon||"🏪"}</div>
+                        <div class="business-info">
+                            <div class="business-category">${b.category}</div>
+                            <div class="business-name">${b.name}</div>
+                            <div class="business-desc">${b.desc}</div>
+                            <div class="business-footer">
+                                <div class="rating">⭐ ${b.rating} (${b.reviews})</div>
+                                <div class="status">${b.status}</div>
+                            </div>
+                        </div>
+                    </div>`;
+        });
+        document.getElementById('businessGrid').innerHTML = html || '<p style="text-align:center;padding:40px">No businesses found</p>';
+    }
+    
+    async function addBusiness() {
+        let name = document.getElementById('bizName').value.trim();
+        let cat = document.getElementById('bizCategory').value;
+        let desc = document.getElementById('bizDesc').value.trim();
+        let phone = document.getElementById('bizPhone').value.trim();
+        let email = document.getElementById('bizEmail').value.trim();
+        let addr = document.getElementById('bizAddress').value.trim();
+        
+        if(!name || !cat || !phone || !email) { showToast("Fill all fields"); return; }
+        
+        await db.collection("businesses").add({
+            name, category:cat, desc, phone, email, address:addr||"Al Kharj",
+            rating:5, reviews:1, status:"New", icon:catIcons[cat]||"🏪"
+        });
+        showToast(`✅ ${name} added!`);
+        closeAddModal();
+        loadBusinesses();
+        document.getElementById('bizName').value = '';
+        document.getElementById('bizCategory').value = '';
+        document.getElementById('bizDesc').value = '';
+        document.getElementById('bizPhone').value = '';
+        document.getElementById('bizEmail').value = '';
+        document.getElementById('bizAddress').value = '';
+    }
+    
+    function viewBusiness(id) {
+        let b = businesses.find(b => b.id === id);
+        if(b) {
+            document.getElementById('businessDetail').innerHTML = `
+                <div style="text-align:center">
+                    <div style="font-size:60px">${b.icon||"🏪"}</div>
+                    <h2>${b.name}</h2>
+                    <p style="color:#c9a84c">${b.category}</p>
+                    <p>${b.desc}</p>
+                    <div style="background:#0a0a0f;padding:15px;margin:20px0;border-radius:10px;text-align:left">
+                        <p>⭐ ${b.rating}★ (${b.reviews} reviews)</p>
+                        <p>📞 ${b.phone}</p>
+                        <p>✉️ ${b.email}</p>
+                        <p>📍 ${b.address}</p>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+                        <a href="tel:${b.phone}" class="btn" style="text-decoration:none">📞 Call</a>
+                        <a href="mailto:${b.email}" class="btn" style="text-decoration:none">✉️ Email</a>
+                        <a href="https://wa.me/${b.phone.replace(/[^0-9]/g,'')}" class="btn" style="background:#25D366;text-decoration:none" target="_blank">💬 WhatsApp</a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+    }
+    
+    function filterByCategory(cat) { activeCategory = activeCategory===cat ? null : cat; renderCategories(); renderBusinesses(); }
+    function searchBusinesses() { searchTerm = document.getElementById('searchInput').value.trim(); renderBusinesses(); }
+    function showToast(msg) { let t=document.getElementById('toast'); t.innerText=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
+    function openAddModal() { document.getElementById('addModal').style.display='flex'; }
+    function closeAddModal() { document.getElementById('addModal').style.display='none'; }
+    function closeDetailModal() { document.getElementById('detailModal').style.display='none'; }
+    window.onclick = e => { if(e.target.classList.contains('modal')) e.target.style.display='none'; }
+    
+    loadBusinesses();
+</script>
+</body>
+</html>
